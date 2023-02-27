@@ -5,11 +5,13 @@
   "main": "server.ts",
   "scripts": {
     "start": "node src/server.ts",
-    "watch": "tsc-watch --esModuleInterop src/server.ts --outDir ./dist --onSuccess \"node ./dist/server.js\"",
-    "test": "jasmine-ts",
+    "watch": "set ENV=dev&& tsc-watch --esModuleInterop src/server.ts --outDir ./dist --onSuccess \"node ./dist/server.js\"",
     "tsc": "tsc",
     "prettier": "prettier --config .prettierrc src/**/*.ts --write",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint src/**/*.ts",
+    "migrate": "db-migrate up --env test",
+    "reset": "db-migrate reset --env test",
+    "test": "set ENV=test&& npm run reset && npx tsc && npm run migrate && jasmine && npm run reset"
   },
   "author": "radwa el-ganady",
   "license": "ISC",
