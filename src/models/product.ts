@@ -39,7 +39,7 @@ export class ProductStore {
     try {
       // A type represents all the property names for product object
       type ProductKeyType = keyof typeof product;
-      // The properties of the product to be update
+      // The properties of the product
       const cols = Object.keys(product).map((key: string): string => `${key}`).join(', '); 
       const colsVal = Object.keys(product).map((_: string, i: number): string => `\$${i + 1}`).join(', ');
       // The values of the product properties
@@ -66,7 +66,7 @@ export class ProductStore {
       throw new Error(`Could not delete the product. Error: ${err}`);
     }
   }
-
+  // Update a product
   async update(id: string, product: Product): Promise<Product> {
     try {
       // A type represents all the property names for product object
