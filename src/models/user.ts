@@ -1,5 +1,8 @@
+import bcrypt from 'bcrypt';
 import client from '../database';
 
+const saltRounds = process.env.SALT_ROUNDS;
+const pepper = process.env.BCRYPT_PASSWORD;
 // The Typescript type for the user model
 export type User = {
   id?: number;
@@ -27,7 +30,7 @@ export class UserStore {
       const sql = 'SELECT * FROM users';
       const result = await conn.query(sql);
       conn.release();
-      return result.rows.map((user: DBuser) : User => {
+      return result.rows.map((user: DBuser): User => {
         return {
           id: user.id,
           firstName: user.first_name,
@@ -39,7 +42,7 @@ export class UserStore {
       });
     } catch (err) {
       throw new Error(`Could not get users. Error: ${err}`);
-    } 
+    }
   }
   // Get a user by id
   async show(id: string): Promise<User> {
@@ -48,7 +51,7 @@ export class UserStore {
       const conn = await client.connect();
       const result = await conn.query(sql, [id]);
       conn.release();
-      const user =  result.rows[0];
+      const user = result.rows[0];
       return {
         id: user.id,
         firstName: user.first_name,
@@ -65,8 +68,20 @@ export class UserStore {
   async create(u: User): Promise<User> {
     try {
       const conn = await client.connect();
-      const sql = 'INSERT INTO users (first_name, last_name, username, password_digest, email) VALUES($1, $2, $3, $4, $5) RETURNING *';
-      const result = await conn.query(sql, [u.firstName, u.lastName, u.username, u.password, u.email]);
+      const sql =
+        'INSERT INTO users (first_name, last_name, username, password_digest, email) VALUES($1, $2, $3, $4, $5) RETURNING *';
+      // Hashing the password from the user by using bcrypt hashing method with salt and pepper
+      const hash = bcrypt.hashSync(
+        u.password + pepper,
+        parseInt(saltRounds as string)
+      );
+      const result = await conn.query(sql, [
+        u.firstName,
+        u.lastName,
+        u.username,
+        hash,
+        u.email
+      ]);
       console.log(result);
       const user = result.rows[0];
       conn.release();
@@ -78,9 +93,9 @@ export class UserStore {
         password: user.password_digest,
         email: user.email
       };
-    } catch(err) {
+    } catch (err) {
       throw new Error(`Could not create the user. Error: ${err}`);
-    } 
+    }
   }
   // Delete a user by id
   async delete(id: string): Promise<User> {
@@ -98,9 +113,30 @@ export class UserStore {
         password: deletedUser.password_digest,
         email: deletedUser.email
       };
-    } catch(err) {
+    } catch (err) {
       throw new Error(`Could not delete the user. Error: ${err}`);
     }
   }
-
+  // Validating passwords at user sign in
+  async authenticate(username: string, password: string): Promise<User | null> {
+    try {
+      const conn = await client.connect();
+      const sql = 'SELECT password_digest FROM users WHERE username=($1)';
+      const result = await conn.query(sql, [username]);
+      // Check if the user exists with the requested username
+      if (result.rows.length) {
+        const user = result.rows[0];
+        // Checks an incoming password concatenated with pepper against the hashed password stored in the database
+        if (bcrypt.compareSync(password + pepper, user.password_digest)) {
+          return user;
+        } else {
+          throw new Error(`Wrong Password.`);
+        }
+      }
+      // Return null if there is no user with the requested username
+      return null;
+    } catch (err) {
+      throw new Error(`Could not validate the user. Error: ${err}`);
+    }
+  }
 }
