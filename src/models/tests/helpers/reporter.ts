@@ -6,7 +6,6 @@ import {
 import SuiteInfo = jasmine.SuiteInfo;
 import CustomReporter = jasmine.CustomReporter;
 
-
 class CustomProcessor extends DisplayProcessor {
   public displayJasmineStarted(info: SuiteInfo, log: string): string {
     return `${log}`;
@@ -14,9 +13,11 @@ class CustomProcessor extends DisplayProcessor {
 }
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter((new SpecReporter({
-  spec: {
-    displayStacktrace: StacktraceOption.NONE
-  },
-  customProcessors: [CustomProcessor]
-}) as unknown) as CustomReporter);
+jasmine.getEnv().addReporter(
+  new SpecReporter({
+    spec: {
+      displayStacktrace: StacktraceOption.NONE
+    },
+    customProcessors: [CustomProcessor]
+  }) as unknown as CustomReporter
+);

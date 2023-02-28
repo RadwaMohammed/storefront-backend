@@ -10,7 +10,7 @@ const {
   POSTGRES_USER,
   POSTGRES_PASSWORD,
   POSTGRES_TEST_DB,
-  ENV,
+  ENV
 } = process.env;
 
 // Instantiate connection to the database

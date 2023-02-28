@@ -40,10 +40,17 @@ export class ProductStore {
       // A type represents all the property names for product object
       type ProductKeyType = keyof typeof product;
       // The properties of the product
-      const cols = Object.keys(product).map((key: string): string => `${key}`).join(', '); 
-      const colsVal = Object.keys(product).map((_: string, i: number): string => `\$${i + 1}`).join(', ');
+      const cols = Object.keys(product)
+        .map((key: string): string => `${key}`)
+        .join(', ');
+      const colsVal = Object.keys(product)
+        .map((_: string, i: number): string => `$${i + 1}`)
+        .join(', ');
       // The values of the product properties
-      const values = Object.keys(product).map((key: string): string|number|undefined => product[key as ProductKeyType]);
+      const values = Object.keys(product).map(
+        (key: string): string | number | undefined =>
+          product[key as ProductKeyType]
+      );
       const sql = `INSERT INTO products (${cols}) VALUES(${colsVal}) RETURNING *`;
       const conn = await client.connect();
       const result = await conn.query(sql, values);
@@ -72,15 +79,20 @@ export class ProductStore {
       // A type represents all the property names for product object
       type ProductKeyType = keyof typeof product;
       // The properties of the product to be update
-      const data = Object.keys(product).map((key: string, i: number): string => `${key} = \$${i + 2}`).join(', ');
+      const data = Object.keys(product)
+        .map((key: string, i: number): string => `${key} = $${i + 2}`)
+        .join(', ');
       // The values of the product properties
-      const values = Object.keys(product).map((key: string): string|number|undefined => product[key as ProductKeyType]);
+      const values = Object.keys(product).map(
+        (key: string): string | number | undefined =>
+          product[key as ProductKeyType]
+      );
       const sql = `UPDATE products SET ${data} WHERE id = $1 RETURNING *`;
       const conn = await client.connect();
       const result = await conn.query(sql, [id, ...values]);
       const updatedProduct = result.rows[0];
       conn.release();
-      return updatedProduct; 
+      return updatedProduct;
     } catch (err) {
       throw new Error(`Could not update the product. Error: ${err}`);
     }
