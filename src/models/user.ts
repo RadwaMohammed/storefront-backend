@@ -82,7 +82,6 @@ export class UserStore {
         hash,
         u.email
       ]);
-      console.log(result);
       const user = result.rows[0];
       conn.release();
       return {
@@ -121,22 +120,29 @@ export class UserStore {
   async authenticate(username: string, password: string): Promise<User | null> {
     try {
       const conn = await client.connect();
-      const sql = 'SELECT password_digest FROM users WHERE username=($1)';
+      const sql = 'SELECT * FROM users WHERE username=($1)';
       const result = await conn.query(sql, [username]);
       // Check if the user exists with the requested username
       if (result.rows.length) {
         const user = result.rows[0];
         // Checks an incoming password concatenated with pepper against the hashed password stored in the database
         if (bcrypt.compareSync(password + pepper, user.password_digest)) {
-          return user;
+          return {
+            id: user.id,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            username: user.username,
+            password: user.password_digest,
+            email: user.email
+          };
         } else {
-          throw new Error(`Wrong Password.`);
+          throw new Error(`Wrong Password`);
         }
       }
       // Return null if there is no user with the requested username
       return null;
     } catch (err) {
-      throw new Error(`Could not validate the user. Error: ${err}`);
+      throw new Error(`Could not validate the user. ${err}`);
     }
   }
 }
