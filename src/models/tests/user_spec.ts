@@ -54,7 +54,11 @@ describe('User Model', () => {
   });
 
   it('authenticate method should return error if password is incorrect', async (): Promise<void> => {
-    await expectAsync(store.authenticate('john_doe', 'passw0123')).toBeRejectedWith(new Error(`Could not validate the user. ${new Error(`Wrong Password`)}`));
+    await expectAsync(
+      store.authenticate('john_doe', 'passw0123')
+    ).toBeRejectedWith(
+      new Error(`Could not validate the user. ${new Error(`Wrong Password`)}`)
+    );
   });
 
   it('authenticate method should return null if the user not exist', async (): Promise<void> => {

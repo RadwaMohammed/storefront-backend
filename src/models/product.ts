@@ -49,7 +49,7 @@ export class ProductStore {
       // The values of the product properties
       const values = Object.keys(product).map(
         (key: string): string | number | undefined =>
-          product[key as ProductKeyType]
+          (product[key as ProductKeyType] as string).trim()
       );
       const sql = `INSERT INTO products (${cols}) VALUES(${colsVal}) RETURNING *`;
       const conn = await client.connect();
@@ -85,7 +85,7 @@ export class ProductStore {
       // The values of the product properties
       const values = Object.keys(product).map(
         (key: string): string | number | undefined =>
-          product[key as ProductKeyType]
+          (product[key as ProductKeyType] as string).trim()
       );
       const sql = `UPDATE products SET ${data} WHERE id = $1 RETURNING *`;
       const conn = await client.connect();

@@ -3,21 +3,21 @@ import { Product, ProductStore } from '../models/product';
 
 const store = new ProductStore();
 
-// Handler function to the index route
+// Handler function for the index route
 const index = async (_req: Request, res: Response): Promise<void> => {
   const products = await store.index();
   res.status(200);
   res.json(products);
 };
 
-// Handler function to the show route
+// Handler function for the show route
 const show = async (_req: Request, res: Response): Promise<void> => {
   const product = await store.show(_req.params.id);
   res.status(product ? 200 : 404);
   res.json(product || `Product with id ${_req.params.id} not found.`);
 };
 
-// Handler function to the create route
+// Handler function for the create route
 const create = async (_req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be created
@@ -66,7 +66,7 @@ const create = async (_req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Handler function to the update route
+// Handler function for the update route
 const update = async (_req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be updated
@@ -116,7 +116,7 @@ const update = async (_req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Handler function to the delete route
+// Handler function for the delete route
 const destroy = async (_req: Request, res: Response): Promise<void> => {
   const deletedProduct = await store.delete(_req.params.id);
   res.status(deletedProduct ? 200 : 404);

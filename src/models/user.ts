@@ -12,6 +12,7 @@ export type User = {
   password: string;
   email: string;
 };
+
 // The Typescript type for the user from database
 type DBuser = {
   id: number;
@@ -21,6 +22,13 @@ type DBuser = {
   password_digest: string;
   email: string;
 };
+
+// DB error type
+interface DBerrorException extends Error {
+  code?: string | undefined;
+  constraint?: string | undefined;
+  detail?: string | undefined;
+}
 
 export class UserStore {
   // Get a list of all the items in users table in the database
@@ -41,7 +49,7 @@ export class UserStore {
         };
       });
     } catch (err) {
-      throw new Error(`Could not get users. Error: ${err}`);
+      throw new Error(`Could not get users. ${err}`);
     }
   }
   // Get a user by id
@@ -61,9 +69,10 @@ export class UserStore {
         email: user.email
       };
     } catch (err) {
-      throw new Error(`Could not find user ${id}. Error: ${err}`);
+      throw new Error(`Could not find user ${id}. ${err}`);
     }
   }
+
   // Create a new user
   async create(u: User): Promise<User> {
     try {
@@ -72,15 +81,15 @@ export class UserStore {
         'INSERT INTO users (first_name, last_name, username, password_digest, email) VALUES($1, $2, $3, $4, $5) RETURNING *';
       // Hashing the password from the user by using bcrypt hashing method with salt and pepper
       const hash = bcrypt.hashSync(
-        u.password + pepper,
+        u.password.trim() + pepper,
         parseInt(saltRounds as string)
       );
       const result = await conn.query(sql, [
-        u.firstName,
-        u.lastName,
-        u.username,
+        u.firstName.trim(),
+        u.lastName.trim(),
+        u.username.trim(),
         hash,
-        u.email
+        u.email.trim()
       ]);
       const user = result.rows[0];
       conn.release();
@@ -93,7 +102,15 @@ export class UserStore {
         email: user.email
       };
     } catch (err) {
-      throw new Error(`Could not create the user. Error: ${err}`);
+      // Check if error occur due to unique constraint violation
+      if (
+        (err as DBerrorException)['code'] &&
+        (err as DBerrorException)['code'] === '23505'
+      ) {
+        throw new Error(`${(err as DBerrorException)['detail']}`);
+      } else {
+        throw new Error(`Could not create the user. ${err}`);
+      }
     }
   }
   // Delete a user by id
@@ -113,7 +130,7 @@ export class UserStore {
         email: deletedUser.email
       };
     } catch (err) {
-      throw new Error(`Could not delete the user. Error: ${err}`);
+      throw new Error(`Could not delete the user. ${err}`);
     }
   }
   // Validating passwords at user sign in
@@ -121,12 +138,14 @@ export class UserStore {
     try {
       const conn = await client.connect();
       const sql = 'SELECT * FROM users WHERE username=($1)';
-      const result = await conn.query(sql, [username]);
+      const result = await conn.query(sql, [username.trim()]);
       // Check if the user exists with the requested username
       if (result.rows.length) {
         const user = result.rows[0];
         // Checks an incoming password concatenated with pepper against the hashed password stored in the database
-        if (bcrypt.compareSync(password + pepper, user.password_digest)) {
+        if (
+          bcrypt.compareSync(password.trim() + pepper, user.password_digest)
+        ) {
           return {
             id: user.id,
             firstName: user.first_name,
