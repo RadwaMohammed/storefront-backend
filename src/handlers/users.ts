@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
+import jwt, { Secret } from 'jsonwebtoken';
 import { User, UserStore } from '../models/user';
+import verifyAuthToken from '../middlewares/auth';
 
 const store = new UserStore();
 
@@ -58,8 +60,14 @@ const create = async (req: Request, res: Response): Promise<void> => {
       );
     } else {
       const newUser = await store.create(user);
+      // Create token after creating a new user
+      const token = jwt.sign(
+        { user: newUser },
+        process.env.TOKEN_SECRET as Secret
+      );
       res.status(200);
-      res.json(newUser);
+      // Passing the token so the user store the token and use it for http requests
+      res.json(token);
     }
   } catch (err) {
     res.status(422);
@@ -90,8 +98,11 @@ const authenticate = async (req: Request, res: Response) => {
       password: req.body.password
     };
     const u = await store.authenticate(user.username, user.password);
+    const token = jwt.sign({ user: u }, process.env.TOKEN_SECRET as Secret);
     res.status(user ? 200 : 404);
-    res.json(u || `User with username ${user.username} not found.`);
+    res.json(
+      u ? token : `User with username ${user.username.trim()} not found.`
+    );
   } catch (err) {
     res.status(401);
     res.json(`An error occured. ${err}`);
@@ -99,10 +110,10 @@ const authenticate = async (req: Request, res: Response) => {
 };
 
 const userRoutes = (app: express.Application) => {
-  app.get('/users', index);
-  app.get('/users/:id', show);
+  app.get('/users', verifyAuthToken, index);
+  app.get('/users/:id', verifyAuthToken, show);
   app.post('/users', create);
-  app.delete('/users/:id', destroy);
+  app.delete('/users/:id', verifyAuthToken, destroy);
   app.post('/users/authenticate', authenticate);
 };
 

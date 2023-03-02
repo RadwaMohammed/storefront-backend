@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import { Product, ProductStore } from '../models/product';
+import verifyAuthToken from '../middlewares/auth';
 
 const store = new ProductStore();
 
@@ -133,9 +134,9 @@ const productRoutes = (app: express.Application): void => {
    */
   app.get('/products', index);
   app.get('/products/:id', show);
-  app.post('/products', create);
-  app.post('/products/:id', update);
-  app.delete('/products/:id', destroy);
+  app.post('/products', verifyAuthToken, create);
+  app.post('/products/:id', verifyAuthToken, update);
+  app.delete('/products/:id', verifyAuthToken, destroy);
 };
 
 export default productRoutes;
