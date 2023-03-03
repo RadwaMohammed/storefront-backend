@@ -1,21 +1,55 @@
 import express, { Request, Response } from 'express';
-import { Product, ProductStore } from '../models/product';
+import { Product, ReqProduct, ProductStore } from '../models/product';
 import verifyAuthToken from '../middlewares/auth';
 
 const store = new ProductStore();
 
 // Handler function for the index route
 const index = async (_req: Request, res: Response): Promise<void> => {
-  const products = await store.index();
-  res.status(200);
-  res.json(products);
+  try {
+    const products = await store.index();
+    res.status(200);
+    res.json(products);
+  } catch (err) {
+    res.status(400);
+    res.json(`An error occured. ${err}`);
+  }
+};
+
+// Handler function for the productsByCategory route
+const productsByCategory = async (
+  _req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const category = _req.params.category.trim();
+    const products = await store.productsByCategory(category);
+    res.status(200);
+    res.json(products);
+  } catch (err) {
+    res.status(400);
+    res.json(`An error occured. ${err}`);
+  }
 };
 
 // Handler function for the show route
 const show = async (_req: Request, res: Response): Promise<void> => {
-  const product = await store.show(_req.params.id);
-  res.status(product ? 200 : 404);
-  res.json(product || `Product with id ${_req.params.id} not found.`);
+  try {
+    const id = _req.params.id.trim();
+    // Check if the id is valid
+    const isIdValid = +id > 0 && !Number.isNaN(+id);
+    if (!isIdValid) {
+      res.status(400);
+      res.json('Invalid product id. Please provide a valid id.');
+    } else {
+      const product = await store.show(+id);
+      res.status(product ? 200 : 404);
+      res.json(product || `Product with id ${id} not found.`);
+    }
+  } catch (err) {
+    res.status(400);
+    res.json(`An error occured. ${err}`);
+  }
 };
 
 // Handler function for the create route
@@ -23,10 +57,10 @@ const create = async (_req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be created
     const product: Product = {
-      name: _req.body.name,
-      category: _req.body.category,
-      price: _req.body.price,
-      description: _req.body.description
+      name: _req.body.name && _req.body.name.trim(),
+      category: _req.body.category && _req.body.category.trim(),
+      price: _req.body.price && _req.body.price.trim(),
+      description: _req.body.description && _req.body.description.trim()
     };
     // A type represents all the property names for product object
     type ProductKeyType = keyof typeof product;
@@ -35,17 +69,15 @@ const create = async (_req: Request, res: Response): Promise<void> => {
      * As category and description are optional
      * so if the user didn't provide any of them will be acceptable
      */
-    if (!product.category || !`${product.category}`.trim()) {
+    if (!product.category) {
       delete product.category;
     }
-    if (!product.description || !`${product.description}`.trim()) {
+    if (!product.description) {
       delete product.description;
     }
     // Find if there is a Mandatory key with no value
     const noValue = Object.keys(product).find(
-      (key: string): boolean =>
-        !product[key as ProductKeyType] ||
-        !`${product[key as ProductKeyType]}`.trim()
+      (key: string): boolean => !product[key as ProductKeyType]
     );
     // Check if the price is avalid positive number
     const isPriceValid = +product.price >= 0 && !Number.isNaN(+product.price);
@@ -63,20 +95,24 @@ const create = async (_req: Request, res: Response): Promise<void> => {
     }
   } catch (err) {
     res.status(422);
-    res.json(`An error occured couldn't create a new product. err: ${err}`);
+    res.json(`An error occured couldn't create a new product. ${err}`);
   }
 };
 
 // Handler function for the update route
-const update = async (_req: Request, res: Response): Promise<void> => {
+const update = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be updated
-    const product: Product = {
-      name: _req.body.name,
-      category: _req.body.category,
-      price: _req.body.price,
-      description: _req.body.description
+    const product: ReqProduct = {
+      name: req.body.name && req.body.name.trim(),
+      category: req.body.category && req.body.category.trim(),
+      price: req.body.price && req.body.price.trim(),
+      description: req.body.description && req.body.description.trim()
     };
+    // The requesrted product id
+    const id = req.params.id.trim();
+    // Check if the id is valid
+    const isIdValid = +id > 0 && !Number.isNaN(+id);
     // A type represents all the property names for product object
     type ProductKeyType = keyof typeof product;
     /**
@@ -90,16 +126,25 @@ const update = async (_req: Request, res: Response): Promise<void> => {
     );
     // Find if there is a key with no value
     const noValue = Object.keys(product).find(
-      (key: string): boolean =>
-        !product[key as ProductKeyType] ||
-        !`${product[key as ProductKeyType]}`.trim()
+      (key: string): boolean => !product[key as ProductKeyType]
     );
+    // Check te product id
+    if (!isIdValid) {
+      res.status(400);
+      res.json('Invalid product id. Please provide a valid id.');
+    }
+    const myProduct = await store.show(+id);
+    // First check if the prodct exist
+    if (!myProduct) {
+      res.status(404);
+      res.json(`Product with id ${id} not found to be update.`);
+    }
     // As the default value for description is empty
     // so if the user didn't provide a value will be acceptable to be updated to empty
-    if (noValue && noValue !== 'description') {
+    else if (noValue && noValue !== 'description') {
       res.status(400);
       res.json(`Please provide a value to the ${noValue}, It can't be empty.`);
-    } // Check if the price is avalid positive number
+    } // Check if the price is a valid positive number
     else if (
       product.price &&
       (+product.price < 0 || Number.isNaN(+product.price))
@@ -107,24 +152,29 @@ const update = async (_req: Request, res: Response): Promise<void> => {
       res.status(400);
       res.json('The price should be a positive number');
     } else {
-      const updatedProduct = await store.update(_req.params.id, product);
+      const updatedProduct = await store.update(+id, product);
       res.status(200);
       res.json(updatedProduct);
     }
   } catch (err) {
     res.status(400);
-    res.json(`An error occured couldn't update the product. err: ${err}`);
+    res.json(`An error occured couldn't update the product. ${err}`);
   }
 };
 
 // Handler function for the delete route
 const destroy = async (_req: Request, res: Response): Promise<void> => {
-  const deletedProduct = await store.delete(_req.params.id);
-  res.status(deletedProduct ? 200 : 404);
-  res.json(
-    deletedProduct ||
-      `Product with id ${_req.params.id} not found to be deleted.`
-  );
+  const id = _req.params.id.trim();
+  // Check if the id is valid
+  const isIdValid = +id > 0 && !Number.isNaN(+id);
+  if (!isIdValid) {
+    res.status(400);
+    res.json('Invalid product id. Please provide a valid id.');
+  } else {
+    const deletedProduct = await store.delete(+id);
+    res.status(deletedProduct ? 200 : 404);
+    res.json(deletedProduct || `Product with id ${id} not found to be delete.`);
+  }
 };
 
 const productRoutes = (app: express.Application): void => {
@@ -133,9 +183,10 @@ const productRoutes = (app: express.Application): void => {
    * and calls the RESTful route handler to create a response
    */
   app.get('/products', index);
+  app.get('/products/categories/:category', productsByCategory);
   app.get('/products/:id', show);
   app.post('/products', verifyAuthToken, create);
-  app.post('/products/:id', verifyAuthToken, update);
+  app.put('/products/:id', verifyAuthToken, update);
   app.delete('/products/:id', verifyAuthToken, destroy);
 };
 
