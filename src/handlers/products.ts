@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { Product, ReqProduct, ProductStore } from '../models/product';
+import { Product, ProductUpdate, ProductStore } from '../models/product';
 import verifyAuthToken from '../middlewares/auth';
 
 const store = new ProductStore();
@@ -103,7 +103,7 @@ const create = async (_req: Request, res: Response): Promise<void> => {
 const update = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be updated
-    const product: ReqProduct = {
+    const product: ProductUpdate = {
       name: req.body.name && req.body.name.trim(),
       category: req.body.category && req.body.category.trim(),
       price: req.body.price && req.body.price.trim(),

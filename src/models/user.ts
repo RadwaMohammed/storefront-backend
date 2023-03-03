@@ -12,7 +12,14 @@ export type User = {
   password: string;
   email: string;
 };
-
+// The Typescript type for the user to be update
+// Make its properties optional as the user may not nee to update all the keys
+export type UserUpdate = {
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+  email?: string;
+};
 // The Typescript type for the user from database
 type DBuser = {
   id: number;
@@ -52,8 +59,9 @@ export class UserStore {
       throw new Error(`Could not get users. ${err}`);
     }
   }
+
   // Get a user by id
-  async show(id: string): Promise<User> {
+  async show(id: number): Promise<User> {
     try {
       const sql = 'SELECT * FROM users WHERE id=($1)';
       const conn = await client.connect();
@@ -81,15 +89,15 @@ export class UserStore {
         'INSERT INTO users (first_name, last_name, username, password_digest, email) VALUES($1, $2, $3, $4, $5) RETURNING *';
       // Hashing the password from the user by using bcrypt hashing method with salt and pepper
       const hash = bcrypt.hashSync(
-        u.password.trim() + pepper,
+        u.password + pepper,
         parseInt(saltRounds as string)
       );
       const result = await conn.query(sql, [
-        u.firstName.trim(),
-        u.lastName.trim(),
-        u.username.trim(),
+        u.firstName,
+        u.lastName,
+        u.username,
         hash,
-        u.email.trim()
+        u.email
       ]);
       const user = result.rows[0];
       conn.release();
@@ -113,8 +121,63 @@ export class UserStore {
       }
     }
   }
+
+  // Update a user
+  async update(id: number, user: UserUpdate): Promise<User> {
+    try {
+      // The properties of the user to be update
+      const userKeys = Object.keys(user).map((key: string): string =>
+        key === 'firstName'
+          ? 'first_name'
+          : key === 'lastName'
+          ? 'last_name'
+          : key === 'password'
+          ? 'password_digest'
+          : key
+      );
+      const data = userKeys
+        .map((key: string, i: number): string => `${key} = $${i + 2}`)
+        .join(', ');
+
+      // Check if there is  a request to update the password
+      if (user.password) {
+        // Hashing the password from the user by using bcrypt hashing method with salt and pepper
+        const hash = bcrypt.hashSync(
+          user.password + pepper,
+          parseInt(saltRounds as string)
+        );
+        user.password = hash;
+      }
+      // The values of the user properties
+      const values = Object.values(user);
+      const sql = `UPDATE users SET ${data} WHERE id = $1 RETURNING *`;
+      const conn = await client.connect();
+      const result = await conn.query(sql, [id, ...values]);
+      const updatedUser = result.rows[0];
+      conn.release();
+      return {
+        id: updatedUser.id,
+        firstName: updatedUser.first_name,
+        lastName: updatedUser.last_name,
+        username: updatedUser.username,
+        password: updatedUser.password_digest,
+        email: updatedUser.email
+      };
+    } catch (err) {
+      // Check if error occur due to unique constraint violation
+      if (
+        (err as DBerrorException)['code'] &&
+        (err as DBerrorException)['code'] === '23505'
+      ) {
+        throw new Error(`${(err as DBerrorException)['detail']}`);
+      } else {
+        throw new Error(`Could not update the user. ${err}`);
+      }
+    }
+  }
+
   // Delete a user by id
-  async delete(id: string): Promise<User> {
+  async delete(id: number): Promise<User> {
     try {
       const conn = await client.connect();
       const sql = 'DELETE FROM users WHERE id=($1) RETURNING *';
@@ -138,14 +201,12 @@ export class UserStore {
     try {
       const conn = await client.connect();
       const sql = 'SELECT * FROM users WHERE username=($1)';
-      const result = await conn.query(sql, [username.trim()]);
+      const result = await conn.query(sql, [username]);
       // Check if the user exists with the requested username
       if (result.rows.length) {
         const user = result.rows[0];
         // Checks an incoming password concatenated with pepper against the hashed password stored in the database
-        if (
-          bcrypt.compareSync(password.trim() + pepper, user.password_digest)
-        ) {
+        if (bcrypt.compareSync(password + pepper, user.password_digest)) {
           return {
             id: user.id,
             firstName: user.first_name,

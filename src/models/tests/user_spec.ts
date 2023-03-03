@@ -42,7 +42,13 @@ describe('User Model', () => {
   });
 
   it('show method should return the correct user', async (): Promise<void> => {
-    const result = await store.show('1');
+    const result = await store.show(1);
+    const usersList = await store.index();
+    expect(result).toEqual(usersList[0]);
+  });
+
+  it('update method should update the user', async (): Promise<void> => {
+    const result = await store.update(1, { lastName: 'tom' });
     const usersList = await store.index();
     expect(result).toEqual(usersList[0]);
   });
@@ -67,7 +73,7 @@ describe('User Model', () => {
   });
 
   it('delete method should remove the user', async (): Promise<void> => {
-    await store.delete('1');
+    await store.delete(1);
     const result = await store.index();
     expect(result).toEqual([]);
   });

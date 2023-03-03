@@ -10,7 +10,7 @@ export type Product = {
 };
 // The Typescript type for the product to be update
 // Make its properties optional as the user may not need to update all the keys
-export type ReqProduct = {
+export type ProductUpdate = {
   name?: string;
   category?: string;
   price?: number;
@@ -91,7 +91,7 @@ export class ProductStore {
     }
   }
   // Update a product
-  async update(id: number, product: ReqProduct): Promise<Product> {
+  async update(id: number, product: ProductUpdate): Promise<Product> {
     try {
       // The properties of the product to be update
       const data = Object.keys(product)
