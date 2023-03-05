@@ -1,8 +1,14 @@
-import { ProductStore } from '../product';
+import { ProductStore } from '../../models/product';
+import { resetProductsTable } from '../utils/reset';
 
 const store = new ProductStore();
 
-describe('Product Model', () => {
+describe('Product Model', (): void => {
+  // Before any tests reset the table
+  beforeAll(async (): Promise<void> => {
+    await resetProductsTable();
+  });
+
   it('should have an index method', (): void => {
     expect(store.index).toBeDefined();
   });
@@ -32,7 +38,7 @@ describe('Product Model', () => {
       id: 1,
       name: 'Skipping Jump Rope',
       category: 'Sporting Goods',
-      price: 20,
+      price: '20',
       description:
         'This skipping rope is made of high-quality material and does not break easily.'
     });
@@ -40,7 +46,7 @@ describe('Product Model', () => {
       id: 1,
       name: 'Skipping Jump Rope',
       category: 'Sporting Goods',
-      price: 20,
+      price: '20',
       description:
         'This skipping rope is made of high-quality material and does not break easily.'
     });
@@ -53,7 +59,7 @@ describe('Product Model', () => {
         id: 1,
         name: 'Skipping Jump Rope',
         category: 'Sporting Goods',
-        price: 20,
+        price: '20',
         description:
           'This skipping rope is made of high-quality material and does not break easily.'
       }
@@ -67,7 +73,7 @@ describe('Product Model', () => {
         id: 1,
         name: 'Skipping Jump Rope',
         category: 'Sporting Goods',
-        price: 20,
+        price: '20',
         description:
           'This skipping rope is made of high-quality material and does not break easily.'
       }
@@ -80,7 +86,7 @@ describe('Product Model', () => {
       id: 1,
       name: 'Skipping Jump Rope',
       category: 'Sporting Goods',
-      price: 20,
+      price: '20',
       description:
         'This skipping rope is made of high-quality material and does not break easily.'
     });
@@ -89,7 +95,7 @@ describe('Product Model', () => {
   it('update method should update the product ', async (): Promise<void> => {
     const edits = {
       name: 'Skipping Jump Rope with Wooden Handles',
-      price: 30
+      price: '30'
     };
     const result = await store.update(1, edits);
     expect(result.name).toEqual(edits.name);

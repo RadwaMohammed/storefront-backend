@@ -1,8 +1,14 @@
-import { UserStore } from '../user';
+import { UserStore } from '../../models/user';
+import { resetUsersTable } from '../utils/reset';
 
 const store = new UserStore();
 
-describe('User Model', () => {
+describe('User Model', (): void => {
+  // Before any tests reset the table
+  beforeAll(async (): Promise<void> => {
+    await resetUsersTable();
+  });
+
   it('should have an index method', (): void => {
     expect(store.index).toBeDefined();
   });

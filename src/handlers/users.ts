@@ -28,8 +28,8 @@ const show = async (_req: Request, res: Response): Promise<void> => {
       res.json('Invalid user id. Please provide a valid id.');
     } else {
       const user = await store.show(+id);
-      res.status(user ? 200 : 404);
-      res.json(user || `User with id ${id} not found.`);
+      res.status(user.id ? 200 : 404);
+      res.json(user.id ? user : `User with id ${id} not found.`);
     }
   } catch (err) {
     res.status(422);
@@ -42,11 +42,11 @@ const create = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested user to be created
     const user: User = {
-      firstName: req.body.first_name && req.body.first_name.trim(),
-      lastName: req.body.last_name && req.body.last_name.trim(),
-      username: req.body.username && req.body.username.trim(),
-      password: req.body.password && req.body.password.trim(),
-      email: req.body.email && req.body.email.trim()
+      firstName: req.body.first_name && `${req.body.first_name}`.trim(),
+      lastName: req.body.last_name && `${req.body.last_name}`.trim(),
+      username: req.body.username && `${req.body.username}`.trim(),
+      password: req.body.password && `${req.body.password}`.trim(),
+      email: req.body.email && `${req.body.email}`.trim()
     };
     // A type represents all the property names for user object
     type UserKeyType = keyof typeof user;
@@ -87,15 +87,17 @@ const update = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested user to be updated
     const user: UserUpdate = {
-      firstName: req.body.first_name && req.body.first_name.trim(),
-      lastName: req.body.last_name && req.body.last_name.trim(),
-      password: req.body.password && req.body.password.trim(),
-      email: req.body.email && req.body.email.trim()
+      firstName: req.body.first_name && `${req.body.first_name}`.trim(),
+      lastName: req.body.last_name && `${req.body.last_name}`.trim(),
+      password: req.body.password && `${req.body.password}`.trim(),
+      email: req.body.email && `${req.body.email}`.trim()
     };
     // The requesrted user id
     const id = req.params.id.trim();
     // Check if the id is valid
     const isIdValid = +id > 0 && !Number.isNaN(+id);
+    // Get the user
+    const myUser = await store.show(+id);
     // A type represents all the property names for user object
     type UserKeyType = keyof typeof user;
     /**
@@ -117,9 +119,8 @@ const update = async (req: Request, res: Response): Promise<void> => {
       res.status(400);
       res.json('Invalid user id. Please provide a valid id.');
     }
-    const myUser = await store.show(+id);
     // First check if the user exist
-    if (!myUser) {
+    else if (!myUser.id) {
       res.status(404);
       res.json(`User with id ${id} not found to be update.`);
     }
@@ -166,8 +167,12 @@ const destroy = async (_req: Request, res: Response) => {
       res.json('Invalid user id. Please provide a valid id.');
     } else {
       const deletedUser = await store.delete(+id);
-      res.status(deletedUser ? 200 : 404);
-      res.json(deletedUser || `User with id ${id} not found to be delete.`);
+      res.status(deletedUser.id ? 200 : 404);
+      res.json(
+        deletedUser.id
+          ? deletedUser
+          : `User with id ${id} not found to be delete.`
+      );
     }
   } catch (err) {
     res.status(422);
@@ -194,7 +199,7 @@ const authenticate = async (req: Request, res: Response) => {
     } else {
       const u = await store.authenticate(user.username, user.password);
       const token = jwt.sign({ user: u }, process.env.TOKEN_SECRET as Secret);
-      res.status(user ? 200 : 404);
+      res.status(u ? 200 : 404);
       res.json(u ? token : `User with username ${user.username} not found.`);
     }
   } catch (err) {

@@ -69,12 +69,12 @@ export class UserStore {
       conn.release();
       const user = result.rows[0];
       return {
-        id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        username: user.username,
-        password: user.password_digest,
-        email: user.email
+        id: user && user.id,
+        firstName: user && user.first_name,
+        lastName: user && user.last_name,
+        username: user && user.username,
+        password: user && user.password_digest,
+        email: user && user.email
       };
     } catch (err) {
       throw new Error(`Could not find user ${id}. ${err}`);
@@ -185,12 +185,12 @@ export class UserStore {
       const deletedUser = result.rows[0];
       conn.release();
       return {
-        id: deletedUser.id,
-        firstName: deletedUser.first_name,
-        lastName: deletedUser.last_name,
-        username: deletedUser.username,
-        password: deletedUser.password_digest,
-        email: deletedUser.email
+        id: deletedUser && deletedUser.id,
+        firstName: deletedUser && deletedUser.first_name,
+        lastName: deletedUser && deletedUser.last_name,
+        username: deletedUser && deletedUser.username,
+        password: deletedUser && deletedUser.password_digest,
+        email: deletedUser && deletedUser.email
       };
     } catch (err) {
       throw new Error(`Could not delete the user. ${err}`);

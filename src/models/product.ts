@@ -5,7 +5,7 @@ export type Product = {
   id?: number;
   name: string;
   category?: string;
-  price: number;
+  price: string; // as the column of price is decimal type
   description?: string;
 };
 // The Typescript type for the product to be update
@@ -13,7 +13,7 @@ export type Product = {
 export type ProductUpdate = {
   name?: string;
   category?: string;
-  price?: number;
+  price?: string; // as the column of price is decimal type
   description?: string;
 };
 
@@ -56,6 +56,7 @@ export class ProductStore {
       throw new Error(`Could not get the product. ${err}`);
     }
   }
+
   // Create a new product
   async create(product: Product): Promise<Product> {
     try {
@@ -77,6 +78,7 @@ export class ProductStore {
       throw new Error(`Could not add ${product.name} product. ${err}`);
     }
   }
+
   // Delete a product by it's id
   async delete(id: number): Promise<Product> {
     try {
@@ -90,6 +92,7 @@ export class ProductStore {
       throw new Error(`Could not delete the product. ${err}`);
     }
   }
+
   // Update a product
   async update(id: number, product: ProductUpdate): Promise<Product> {
     try {

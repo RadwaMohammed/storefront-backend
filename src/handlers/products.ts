@@ -47,20 +47,20 @@ const show = async (_req: Request, res: Response): Promise<void> => {
       res.json(product || `Product with id ${id} not found.`);
     }
   } catch (err) {
-    res.status(400);
+    res.status(422);
     res.json(`An error occured. ${err}`);
   }
 };
 
 // Handler function for the create route
-const create = async (_req: Request, res: Response): Promise<void> => {
+const create = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be created
     const product: Product = {
-      name: _req.body.name && _req.body.name.trim(),
-      category: _req.body.category && _req.body.category.trim(),
-      price: _req.body.price && _req.body.price.trim(),
-      description: _req.body.description && _req.body.description.trim()
+      name: req.body.name && `${req.body.name}`.trim(),
+      category: req.body.category && `${req.body.category}`.trim(),
+      price: req.body.price && `${req.body.price}`.trim(),
+      description: req.body.description && `${req.body.description}`.trim()
     };
     // A type represents all the property names for product object
     type ProductKeyType = keyof typeof product;
@@ -81,7 +81,6 @@ const create = async (_req: Request, res: Response): Promise<void> => {
     );
     // Check if the price is avalid positive number
     const isPriceValid = +product.price >= 0 && !Number.isNaN(+product.price);
-
     if (noValue) {
       res.status(400);
       res.json(`Please provide a value to the ${noValue}, It can't be empty.`);
@@ -104,15 +103,17 @@ const update = async (req: Request, res: Response): Promise<void> => {
   try {
     // The requested product to be updated
     const product: ProductUpdate = {
-      name: req.body.name && req.body.name.trim(),
-      category: req.body.category && req.body.category.trim(),
-      price: req.body.price && req.body.price.trim(),
-      description: req.body.description && req.body.description.trim()
+      name: req.body.name && `${req.body.name}`.trim(),
+      category: req.body.category && `${req.body.category}`.trim(),
+      price: req.body.price && `${req.body.price}`.trim(),
+      description: req.body.description && `${req.body.description}`.trim()
     };
     // The requesrted product id
     const id = req.params.id.trim();
     // Check if the id is valid
     const isIdValid = +id > 0 && !Number.isNaN(+id);
+    // Get the product
+    const myProduct = await store.show(+id);
     // A type represents all the property names for product object
     type ProductKeyType = keyof typeof product;
     /**
@@ -133,9 +134,8 @@ const update = async (req: Request, res: Response): Promise<void> => {
       res.status(400);
       res.json('Invalid product id. Please provide a valid id.');
     }
-    const myProduct = await store.show(+id);
     // First check if the prodct exist
-    if (!myProduct) {
+    else if (!myProduct) {
       res.status(404);
       res.json(`Product with id ${id} not found to be update.`);
     }
