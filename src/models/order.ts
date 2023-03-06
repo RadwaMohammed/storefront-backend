@@ -4,7 +4,7 @@ import client from '../database';
 export type Order = {
   id?: number;
   status: string;
-  userId?: number;
+  userId: number;
 };
 
 // The Typescript type for the order from database
@@ -32,6 +32,12 @@ type OrderDetails = {
   products: OrderProduct[];
 };
 
+// DB error type
+interface DBerrorException extends Error {
+  code?: string | undefined;
+  constraint?: string | undefined;
+  detail?: string | undefined;
+}
 export class OrderStore {
   // Get a list of all the items in orders table in the database
   async index(): Promise<Order[]> {
@@ -92,6 +98,26 @@ export class OrderStore {
     }
   }
 
+  // Get a list of all the items in orders table in the database
+  async indexDetails(): Promise<OrderDetails[]> {
+    try {
+      const sql = 'SELECT * FROM orders';
+      const conn = await client.connect();
+      const result = await conn.query(sql);
+      conn.release();
+      const orders = result.rows;
+      const myOrders = await Promise.all(
+        orders.map(
+          async (order: DBorder): Promise<OrderDetails> =>
+            await this.getOrderDetails(order.id)
+        )
+      );
+      return myOrders;
+    } catch (err) {
+      throw new Error(`Could not get orders. ${err}`);
+    }
+  }
+
   // Create a new order
   async create(order: Order): Promise<Order> {
     try {
@@ -107,12 +133,23 @@ export class OrderStore {
         userId: myOrder && myOrder.user_id
       };
     } catch (err) {
-      throw new Error(`Could not add new oder. ${err}`);
+      // Check if error occur due to unique constraint violation
+      if (
+        (err as DBerrorException)['code'] &&
+        (err as DBerrorException)['code'] === '23514' &&
+        (err as DBerrorException)['constraint'] === 'orders_status_check'
+      ) {
+        throw new Error(
+          `<status> of an order should only have a value of ('active' or 'complete')`
+        );
+      } else {
+        throw new Error(`Could not create the order. ${err}`);
+      }
     }
   }
 
   // Get an order by it's id - update the status of the order
-  async update(id: number, status: Order['status']): Promise<Order> {
+  async updateStatus(id: number, status: Order['status']): Promise<Order> {
     try {
       const sql = 'UPDATE orders SET status=($2) WHERE id=($1) RETURNING *';
       const conn = await client.connect();
@@ -125,21 +162,35 @@ export class OrderStore {
         userId: order && order.user_id
       };
     } catch (err) {
-      throw new Error(`Could not edit the status of order ${id}. ${err}`);
+      // Check if error occur due to unique constraint violation
+      if (
+        (err as DBerrorException)['code'] &&
+        (err as DBerrorException)['code'] === '23514' &&
+        (err as DBerrorException)['constraint'] === 'orders_status_check'
+      ) {
+        throw new Error(
+          `<status> of an order should only have a value of ('active' or 'complete')`
+        );
+      } else {
+        throw new Error(`Could not edit the status of the order. ${err}`);
+      }
     }
   }
 
   // Edit quantity of a product in an order
   async updateQuantityProduct(
     id: number,
-    productId: number,
-    quantity: number
+    product: OrderProduct
   ): Promise<OrderProduct> {
     try {
       const sql =
         'UPDATE order_products SET quantity=($3) WHERE order_id=($1) AND product_id=($2) RETURNING *';
       const conn = await client.connect();
-      const result = await conn.query(sql, [id, productId, quantity]);
+      const result = await conn.query(sql, [
+        id,
+        product.productId,
+        product.quantity
+      ]);
       conn.release();
       const orderProduct = result.rows[0];
       return {
@@ -149,7 +200,7 @@ export class OrderStore {
       };
     } catch (err) {
       throw new Error(
-        `Could not edit the quantity of product ${productId} in order ${id}. ${err}`
+        `Could not edit the quantity of product ${product.productId} in order ${id}. ${err}`
       );
     }
   }
@@ -187,8 +238,7 @@ export class OrderStore {
   // Add Product to an order
   async addProduct(
     orderId: number,
-    productId: number,
-    quantity: number
+    product: OrderProduct
   ): Promise<OrderProduct> {
     try {
       let order: OrderProduct;
@@ -197,22 +247,26 @@ export class OrderStore {
       // get order to see if it is open
       if (orderDetail && orderDetail.status !== 'active') {
         throw new Error(
-          `Could not add product ${productId} to order ${orderId} because order status is ${orderDetail.status}`
+          `Could not add product ${product.productId} to order ${orderId} because order status is ${orderDetail.status}`
         );
       }
       // Make sure if the user try to insert product exist already in the order
       if (
         products.find(
-          (product: OrderProduct): boolean => product.productId === productId
+          (p: OrderProduct): boolean => p.productId === product.productId
         )
       ) {
         // Update the product if it is already exist in the order
-        order = await this.updateQuantityProduct(orderId, productId, quantity);
+        order = await this.updateQuantityProduct(orderId, product);
       } else {
         const sql =
-          'INSERT INTO order_products (quantity, order_id, product_id) VALUES($1, $2, $3) RETURNING *';
+          'INSERT INTO order_products ( order_id, product_id, quantity) VALUES($1, $2, $3) RETURNING *';
         const conn = await client.connect();
-        const result = await conn.query(sql, [quantity, orderId, productId]);
+        const result = await conn.query(sql, [
+          orderId,
+          product.productId,
+          product.quantity
+        ]);
         const myOrder = result.rows[0];
         conn.release();
         order = {
@@ -225,7 +279,7 @@ export class OrderStore {
       return order;
     } catch (err) {
       throw new Error(
-        `Could not add product ${productId} to order ${orderId}: ${err}`
+        `Could not add product ${product.productId} to order ${orderId}: ${err}`
       );
     }
   }
