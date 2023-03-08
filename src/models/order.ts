@@ -97,7 +97,16 @@ export class OrderStore {
       throw new Error(`Could not add get order's details. ${err}`);
     }
   }
-
+  // Get a list of all products of an order
+  async getOrderProducts(id: number): Promise<OrderProduct[]> {
+    try {
+      const myOrder = await this.getOrderDetails(id);
+      const products = myOrder.products;
+      return products;
+    } catch (err) {
+      throw new Error(`Could not get products of order's ${id} id. ${err}`);
+    }
+  }
   // Get a list of all the items in orders table in the database
   async indexDetails(): Promise<OrderDetails[]> {
     try {
@@ -312,7 +321,7 @@ export class OrderStore {
       const sql = 'DELETE FROM order_products WHERE order_id = $1 RETURNING *';
       const conn = await client.connect();
       const result = await conn.query(sql, [id]);
-      const products = result.rows[0];
+      const products = result.rows;
       conn.release();
       return products.map((product: DBorderproduct): OrderProduct => {
         return {
@@ -341,7 +350,7 @@ export class OrderStore {
           return {
             orderId: order.id,
             status: order.status,
-            products: (await this.getOrderDetails(order.id)).products
+            products: await this.getOrderProducts(order.id)
           };
         })
       );
@@ -365,7 +374,7 @@ export class OrderStore {
           return {
             orderId: order.id,
             status: order.status,
-            products: (await this.getOrderDetails(order.id)).products
+            products: await this.getOrderProducts(order.id)
           };
         })
       );
@@ -389,7 +398,7 @@ export class OrderStore {
           return {
             orderId: order.id,
             status: order.status,
-            products: (await this.getOrderDetails(order.id)).products
+            products: await this.getOrderProducts(order.id)
           };
         })
       );
@@ -400,7 +409,7 @@ export class OrderStore {
   }
 
   // Delete All Current active orders for a user
-  async deletActiveOrders(id: number): Promise<Order[]> {
+  async deleteActiveOrders(id: number): Promise<Order[]> {
     try {
       const allActiveOrder = await this.getActiveOrders(id);
       return await Promise.all(
@@ -417,7 +426,7 @@ export class OrderStore {
   }
 
   // Delete All complete orders for a user
-  async deletCompleteOrders(id: number): Promise<Order[]> {
+  async deleteCompleteOrders(id: number): Promise<Order[]> {
     try {
       const allCompleteOrder = await this.getCompleteOrders(id);
       return await Promise.all(
@@ -434,7 +443,7 @@ export class OrderStore {
   }
 
   // Delete All complete orders for a user
-  async deletAllOrders(id: number): Promise<Order[]> {
+  async deleteAllOrders(id: number): Promise<Order[]> {
     try {
       const orders = await this.getAllOrders(id);
       return await Promise.all(

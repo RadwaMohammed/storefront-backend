@@ -95,6 +95,9 @@ describe('Order Model', (): void => {
   it('should have a getCompleteOrders method', (): void => {
     expect(store.getCompleteOrders).toBeDefined();
   });
+  it('should have a getOrderProducts method', (): void => {
+    expect(store.getOrderProducts).toBeDefined();
+  });
 
   it('create method should add an order', async (): Promise<void> => {
     const result = await store.create({
@@ -168,6 +171,16 @@ describe('Order Model', (): void => {
         }
       ]
     });
+  });
+
+  it('getOrderProducts method should return the products of the order', async (): Promise<void> => {
+    const result = await store.getOrderProducts(1);
+    expect(result).toEqual([
+      {
+        productId: 1,
+        quantity: 5
+      }
+    ]);
   });
 
   it('indexDetails method should return a list of order with products', async (): Promise<void> => {
@@ -334,13 +347,13 @@ describe('Order Model', (): void => {
   });
 
   it('deletActiveOrders method should delete product from the order', async (): Promise<void> => {
-    await store.deletActiveOrders(1);
+    await store.deleteActiveOrders(1);
     const orders = await store.getActiveOrders(1);
     expect(orders).toEqual([]);
   });
 
   it('deletCompleteOrders method should delete product from the order', async (): Promise<void> => {
-    await store.deletCompleteOrders(1);
+    await store.deleteCompleteOrders(1);
     const orders = await store.getCompleteOrders(1);
     expect(orders).toEqual([]);
   });
@@ -359,7 +372,7 @@ describe('Order Model', (): void => {
       status: 'active',
       userId: 1
     });
-    await store.deletAllOrders(1);
+    await store.deleteAllOrders(1);
     const orders = await store.getAllOrders(1);
     expect(orders).toEqual([]);
   });
