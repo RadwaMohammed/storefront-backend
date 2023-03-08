@@ -52,7 +52,9 @@ const create = async (req: Request, res: Response): Promise<void> => {
     type UserKeyType = keyof typeof user;
     // Find if there is a property with no value
     const noValue = Object.keys(user).find(
-      (key: string): boolean => !user[key as UserKeyType]
+      (key: string): boolean =>
+        user[key as UserKeyType] === undefined ||
+        user[key as UserKeyType] === ''
     );
     if (noValue) {
       res.status(400);

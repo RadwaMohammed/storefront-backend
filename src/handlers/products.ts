@@ -77,7 +77,9 @@ const create = async (req: Request, res: Response): Promise<void> => {
     }
     // Find if there is a Mandatory key with no value
     const noValue = Object.keys(product).find(
-      (key: string): boolean => !product[key as ProductKeyType]
+      (key: string): boolean =>
+        product[key as ProductKeyType] === undefined ||
+        product[key as ProductKeyType] === ''
     );
     // Check if the price is avalid positive number
     const isPriceValid = +product.price >= 0 && !Number.isNaN(+product.price);
@@ -94,7 +96,7 @@ const create = async (req: Request, res: Response): Promise<void> => {
     }
   } catch (err) {
     res.status(422);
-    res.json(`An error occured couldn't create a new product. ${err}`);
+    res.json(`An error occured. ${err}`);
   }
 };
 
@@ -127,7 +129,9 @@ const update = async (req: Request, res: Response): Promise<void> => {
     );
     // Find if there is a key with no value
     const noValue = Object.keys(product).find(
-      (key: string): boolean => !product[key as ProductKeyType]
+      (key: string): boolean =>
+        product[key as ProductKeyType] === undefined ||
+        product[key as ProductKeyType] === ''
     );
     // Check te product id
     if (!isIdValid) {
@@ -158,22 +162,29 @@ const update = async (req: Request, res: Response): Promise<void> => {
     }
   } catch (err) {
     res.status(400);
-    res.json(`An error occured couldn't update the product. ${err}`);
+    res.json(`An error occured. ${err}`);
   }
 };
 
 // Handler function for the delete route
 const destroy = async (_req: Request, res: Response): Promise<void> => {
-  const id = _req.params.id.trim();
-  // Check if the id is valid
-  const isIdValid = +id > 0 && !Number.isNaN(+id);
-  if (!isIdValid) {
+  try {
+    const id = _req.params.id.trim();
+    // Check if the id is valid
+    const isIdValid = +id > 0 && !Number.isNaN(+id);
+    if (!isIdValid) {
+      res.status(400);
+      res.json('Invalid product id. Please provide a valid id.');
+    } else {
+      const deletedProduct = await store.delete(+id);
+      res.status(deletedProduct ? 200 : 404);
+      res.json(
+        deletedProduct || `Product with id ${id} not found to be delete.`
+      );
+    }
+  } catch (err) {
     res.status(400);
-    res.json('Invalid product id. Please provide a valid id.');
-  } else {
-    const deletedProduct = await store.delete(+id);
-    res.status(deletedProduct ? 200 : 404);
-    res.json(deletedProduct || `Product with id ${id} not found to be delete.`);
+    res.json(`An error occured. ${err}`);
   }
 };
 

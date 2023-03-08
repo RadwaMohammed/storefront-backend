@@ -123,7 +123,11 @@ describe('Order Model', (): void => {
   });
 
   it('addProduct method should update quantity if user try to add a product already exist in the order', async (): Promise<void> => {
-    const result = await store.addProduct(1, { productId: 1, quantity: 5 });
+    const result = await store.addProduct(1, {
+      orderId: 1,
+      productId: 1,
+      quantity: 5
+    });
     expect(result).toEqual({
       orderId: 1,
       productId: 1,

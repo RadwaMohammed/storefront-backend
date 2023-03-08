@@ -82,7 +82,7 @@ export class OrderStore {
       conn.release();
       const products = result.rows;
       const orderDetails = {
-        orderId: id,
+        orderId: order && (order.id as unknown as number),
         userId: order && order.userId,
         status: order && order.status,
         products: products.map((product: DBorderproduct): OrderProduct => {
@@ -246,9 +246,7 @@ export class OrderStore {
       const products = orderDetail.products;
       // get order to see if it is open
       if (orderDetail && orderDetail.status !== 'active') {
-        throw new Error(
-          `Could not add product ${product.productId} to order ${orderId} because order status is ${orderDetail.status}`
-        );
+        throw new Error(`Order status is ${orderDetail.status}`);
       }
       // Make sure if the user try to insert product exist already in the order
       if (
