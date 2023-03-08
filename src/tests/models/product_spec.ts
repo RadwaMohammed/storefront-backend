@@ -1,5 +1,5 @@
 import { ProductStore } from '../../models/product';
-import { resetProductsTable } from '../utils/reset';
+import { resetProductsTable } from '../../utils/reset';
 
 const store = new ProductStore();
 

@@ -1,7 +1,8 @@
-import { OrderProduct, OrderStore } from '../../models/order';
-import { resetAllTables } from '../utils/reset';
+import { OrderStore } from '../../models/order';
+import { resetAllTables } from '../../utils/reset';
 import { UserStore } from '../../models/user';
 import { ProductStore } from './../../models/product';
+import { OrderProduct } from '../../utils/types';
 
 const store = new OrderStore();
 const userStore = new UserStore();

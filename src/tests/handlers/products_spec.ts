@@ -1,9 +1,10 @@
 import supertest from 'supertest';
 import jwt, { Secret } from 'jsonwebtoken';
 import app from '../../server';
-import { Product, ProductStore } from '../../models/product';
-import { User, UserStore } from '../../models/user';
-import { resetProductsTable, resetUsersTable } from '../utils/reset';
+import { ProductStore } from '../../models/product';
+import { UserStore } from '../../models/user';
+import { resetProductsTable, resetUsersTable } from '../../utils/reset';
+import { Product, User } from '../../utils/types';
 
 const request = supertest(app);
 const uStore = new UserStore();

@@ -1,5 +1,5 @@
 import { UserStore } from '../../models/user';
-import { resetUsersTable } from '../utils/reset';
+import { resetUsersTable } from '../../utils/reset';
 
 const store = new UserStore();
 

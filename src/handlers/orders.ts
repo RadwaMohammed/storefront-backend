@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express';
-import { Order, OrderProduct, OrderStore } from '../models/order';
+import { OrderStore } from '../models/order';
 import verifyAuthToken from '../middlewares/auth';
 import { UserStore } from './../models/user';
 import { ProductStore } from './../models/product';
+import { Order, OrderProduct } from '../utils/types';
 
 const store = new OrderStore();
 const userStore = new UserStore();
@@ -69,9 +70,14 @@ const getOrderProducts = async (
     const id = _req.params.id.trim();
     // Check if the id is valid
     const isIdValid = +id > 0 && !Number.isNaN(+id);
+    const order = isIdValid && (await store.show(+id));
+
     if (!isIdValid) {
       res.status(400);
       res.json('Invalid order id. Please provide a valid id.');
+    } else if (order && !order.id) {
+      res.status(404);
+      res.json(`Order with id ${id} not found.`);
     } else {
       const products = await store.getOrderProducts(+id);
       res.status(200);
@@ -110,6 +116,7 @@ const create = async (req: Request, res: Response): Promise<void> => {
     // Check if the userId valid
     const isUserIdValid = order.userId > 0 && !Number.isNaN(order.userId);
     const orderUser = isUserIdValid && (await userStore.show(order.userId));
+    const isStatusValid = ['active', 'complete'].includes(order.status);
     if (
       myReqStatus === undefined ||
       myReqUserId === undefined ||
@@ -128,6 +135,9 @@ const create = async (req: Request, res: Response): Promise<void> => {
     } else if (!(orderUser || {}).id) {
       res.status(404);
       res.json(`There is no a user has id ${order.userId} is found.`);
+    } else if (!isStatusValid) {
+      res.status(400);
+      res.json(`Invalid status value. it should be 'active' or 'complete'.`);
     } else {
       const newProduct = await store.create(order);
       res.status(200);
@@ -149,6 +159,7 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
     // Check if the id is valid
     const isIdValid = +id > 0 && !Number.isNaN(+id);
     const order = isIdValid && (await store.show(+id));
+    const isStatusValid = ['active', 'complete'].includes(status);
     if (!isIdValid) {
       res.status(400);
       res.json('Invalid order id. Please provide a valid id.');
@@ -159,6 +170,11 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
       res.status(400);
       res.json(
         `Please provide a value to the status <'active' or 'complete'>. It can't be empty.`
+      );
+    } else if (!isStatusValid) {
+      res.status(400);
+      res.json(
+        `Please provide a value to the status <'active' or 'complete'>.`
       );
     } else {
       const updatedOrder = await store.updateStatus(+id, status);
@@ -173,7 +189,32 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Handler Function for the add_product </orders/:id/order-products> route
+// Handler function for the delete </orders/:id>route
+const destroy = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const id = _req.params.id.trim();
+    // Check if the id is valid
+    const isIdValid = +id > 0 && !Number.isNaN(+id);
+    if (!isIdValid) {
+      res.status(400);
+      res.json('Invalid order id. Please provide a valid id.');
+    } else {
+      const deletedOrder = await store.delete(+id);
+      res.status(deletedOrder.id ? 200 : 404);
+      res.json(
+        deletedOrder.id
+          ? deletedOrder
+          : `Order with id ${id} not found to be delete.`
+      );
+    }
+  } catch (err) {
+    res.status(422);
+    res.json(`An error occured. ${err}`);
+  }
+};
+
+/*------------------------------------ Order-Products handlers ------------------------------------ */
+// Handler Function for the add_product </orders/:id/products> route
 const addProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     const reqOrderId = req.params.id && `${req.params.id}`.trim();
@@ -186,7 +227,6 @@ const addProduct = async (req: Request, res: Response): Promise<void> => {
       productId: +reqProductId,
       quantity: +reqQuantity
     };
-
     // Check if the values of request are valid
     const isOrderIdValid = +reqOrderId > 0 && !Number.isNaN(+reqOrderId);
     const isProductIdValid = +reqProductId > 0 && !Number.isNaN(+reqProductId);
@@ -290,7 +330,6 @@ const updateQuantityProduct = async (
     // Get the order
     const myOrder =
       isOrderIdValid && (await store.getOrderDetails(+reqOrderId));
-
     // make sure if the product already exist
     const orderProducts = myOrder && myOrder.products;
     const reqProduct =
@@ -298,7 +337,6 @@ const updateQuantityProduct = async (
       orderProducts.find(
         (p: OrderProduct): boolean => p.productId === product.productId
       );
-
     // Check if order-id is valid
     if (!isOrderIdValid) {
       res.status(400);
@@ -337,30 +375,6 @@ const updateQuantityProduct = async (
       );
       res.status(200);
       res.json(myOrderProduct);
-    }
-  } catch (err) {
-    res.status(422);
-    res.json(`An error occured. ${err}`);
-  }
-};
-
-// Handler function for the delete </orders/:id>route
-const destroy = async (_req: Request, res: Response): Promise<void> => {
-  try {
-    const id = _req.params.id.trim();
-    // Check if the id is valid
-    const isIdValid = +id > 0 && !Number.isNaN(+id);
-    if (!isIdValid) {
-      res.status(400);
-      res.json('Invalid order id. Please provide a valid id.');
-    } else {
-      const deletedOrder = await store.delete(+id);
-      res.status(deletedOrder.id ? 200 : 404);
-      res.json(
-        deletedOrder.id
-          ? deletedOrder
-          : `Order with id ${id} not found to be delete.`
-      );
     }
   } catch (err) {
     res.status(422);
@@ -430,6 +444,7 @@ const deleteAllProducts = async (
   }
 };
 
+/*------------------------------------ User-orders handlers ------------------------------------ */
 // Handler function for getAllOrders for a user </users/:user/orders> route
 const getAllOrders = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -598,6 +613,8 @@ const deleteCompleteOrders = async (
     res.json(`An error occured. ${err}`);
   }
 };
+
+/*------------------------------------ Routs ------------------------------------ */
 const orderRoutes = (app: express.Application): void => {
   /**
    * Call the express methods that matches to the routes
@@ -614,23 +631,22 @@ const orderRoutes = (app: express.Application): void => {
     verifyAuthToken,
     deleteCompleteOrders
   );
-
   app.put(
     '/orders/:id/products/:product',
     verifyAuthToken,
     updateQuantityProduct
   );
   app.delete('/orders/:id/products/:product', verifyAuthToken, deleteProduct);
+  app.put('/orders/:id', verifyAuthToken, updateStatus);
   app.get('/orders/:id/products', verifyAuthToken, getOrderProducts);
   app.post('/orders/:id/products', verifyAuthToken, addProduct);
   app.delete('/orders/:id/products', verifyAuthToken, deleteAllProducts);
   app.get('/orders/:id/order-details', verifyAuthToken, getOrderDetails);
-  app.put('/orders/:id', verifyAuthToken, updateStatus);
+  app.get('/orders/order-details', verifyAuthToken, indexDetails);
   app.delete('/orders/:id', verifyAuthToken, destroy);
   app.get('/orders/:id', verifyAuthToken, show);
-  app.get('/orders/order-details', verifyAuthToken, indexDetails);
-  app.get('/orders', verifyAuthToken, index);
   app.post('/orders', verifyAuthToken, create);
+  app.get('/orders', verifyAuthToken, index);
 };
 
 export default orderRoutes;

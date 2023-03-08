@@ -1,6 +1,6 @@
 import supertest from 'supertest';
 import app from '../../server';
-import { resetUsersTable } from '../utils/reset';
+import { resetUsersTable } from '../../utils/reset';
 
 const request = supertest(app);
 let token: string;

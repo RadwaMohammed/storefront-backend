@@ -1,21 +1,5 @@
 import client from '../database';
-
-// The Typescript type for the product model
-export type Product = {
-  id?: number;
-  name: string;
-  category?: string;
-  price: string; // as the column of price is decimal type
-  description?: string;
-};
-// The Typescript type for the product to be update
-// Make its properties optional as the user may not need to update all the keys
-export type ProductUpdate = {
-  name?: string;
-  category?: string;
-  price?: string; // as the column of price is decimal type
-  description?: string;
-};
+import { Product, ProductUpdate } from '../utils/types';
 
 export class ProductStore {
   // Get a list of all the items in products table in the database

@@ -1,43 +1,13 @@
 import client from '../database';
+import {
+  DBerrorException,
+  DBorder,
+  DBorderproduct,
+  Order,
+  OrderDetails,
+  OrderProduct
+} from '../utils/types';
 
-// The Typescript type for the order model
-export type Order = {
-  id?: number;
-  status: string;
-  userId: number;
-};
-
-// The Typescript type for the order from database
-type DBorder = {
-  id: number;
-  status: string;
-  user_id: number;
-};
-// The Typescript type for the product in the order
-export type OrderProduct = {
-  orderId?: number;
-  productId: number;
-  quantity?: number;
-};
-// The Typescript type for the product in the order from database
-type DBorderproduct = {
-  product_id: number;
-  quantity: number;
-};
-// The Typescript type for the order details
-type OrderDetails = {
-  orderId: number;
-  userId?: number;
-  status?: string;
-  products: OrderProduct[];
-};
-
-// DB error type
-interface DBerrorException extends Error {
-  code?: string | undefined;
-  constraint?: string | undefined;
-  detail?: string | undefined;
-}
 export class OrderStore {
   // Get a list of all the items in orders table in the database
   async index(): Promise<Order[]> {
@@ -94,19 +64,10 @@ export class OrderStore {
       };
       return orderDetails;
     } catch (err) {
-      throw new Error(`Could not add get order's details. ${err}`);
+      throw new Error(`Could not get order's details. ${err}`);
     }
   }
-  // Get a list of all products of an order
-  async getOrderProducts(id: number): Promise<OrderProduct[]> {
-    try {
-      const myOrder = await this.getOrderDetails(id);
-      const products = myOrder.products;
-      return products;
-    } catch (err) {
-      throw new Error(`Could not get products of order's ${id} id. ${err}`);
-    }
-  }
+
   // Get a list of all the items in orders table in the database
   async indexDetails(): Promise<OrderDetails[]> {
     try {
@@ -186,34 +147,6 @@ export class OrderStore {
     }
   }
 
-  // Edit quantity of a product in an order
-  async updateQuantityProduct(
-    id: number,
-    product: OrderProduct
-  ): Promise<OrderProduct> {
-    try {
-      const sql =
-        'UPDATE order_products SET quantity=($3) WHERE order_id=($1) AND product_id=($2) RETURNING *';
-      const conn = await client.connect();
-      const result = await conn.query(sql, [
-        id,
-        product.productId,
-        product.quantity
-      ]);
-      conn.release();
-      const orderProduct = result.rows[0];
-      return {
-        orderId: orderProduct && orderProduct.order_id,
-        productId: orderProduct && orderProduct.product_id,
-        quantity: orderProduct && orderProduct.quantity
-      };
-    } catch (err) {
-      throw new Error(
-        `Could not edit the quantity of product ${product.productId} in order ${id}. ${err}`
-      );
-    }
-  }
-
   // Delete an order by it's id
   async delete(id: number): Promise<Order> {
     try {
@@ -241,6 +174,46 @@ export class OrderStore {
       };
     } catch (err) {
       throw new Error(`Could not delete the order ${id}. ${err}`);
+    }
+  }
+
+  /*------------------------------------ Order-Products methods ------------------------------------ */
+  // Get a list of all products of an order
+  async getOrderProducts(id: number): Promise<OrderProduct[]> {
+    try {
+      const myOrder = await this.getOrderDetails(id);
+      const products = myOrder.products;
+      return products;
+    } catch (err) {
+      throw new Error(`Could not get products of order's ${id} id. ${err}`);
+    }
+  }
+
+  // Edit quantity of a product in an order
+  async updateQuantityProduct(
+    id: number,
+    product: OrderProduct
+  ): Promise<OrderProduct> {
+    try {
+      const sql =
+        'UPDATE order_products SET quantity=($3) WHERE order_id=($1) AND product_id=($2) RETURNING *';
+      const conn = await client.connect();
+      const result = await conn.query(sql, [
+        id,
+        product.productId,
+        product.quantity
+      ]);
+      conn.release();
+      const orderProduct = result.rows[0];
+      return {
+        orderId: orderProduct && orderProduct.order_id,
+        productId: orderProduct && orderProduct.product_id,
+        quantity: orderProduct && orderProduct.quantity
+      };
+    } catch (err) {
+      throw new Error(
+        `Could not edit the quantity of product ${product.productId} in order ${id}. ${err}`
+      );
     }
   }
 
@@ -304,7 +277,6 @@ export class OrderStore {
       const orderProduct = result.rows[0];
       conn.release();
       return {
-        orderId: orderProduct && orderProduct.order_id,
         productId: orderProduct && orderProduct.product_id,
         quantity: orderProduct && orderProduct.quantity
       };
@@ -336,6 +308,7 @@ export class OrderStore {
     }
   }
 
+  /*------------------------------------ User-ORders methods ------------------------------------ */
   // Get All orders for a user
   async getAllOrders(id: number): Promise<OrderDetails[]> {
     try {
