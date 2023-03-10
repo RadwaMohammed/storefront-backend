@@ -9,14 +9,18 @@ const address = '0.0.0.0:3000';
 
 app.use(bodyParser.json());
 
-app.get('/', function (req: Request, res: Response) {
-  res.send('Hello World!');
+app.get('/', function (_req: Request, res: Response) {
+  res.status(200);
+  res.send('Hello to the API!');
 });
 
 productRoutes(app);
 userRoutes(app);
 orderRoutes(app);
-
+app.get('*', function (_req: Request, res: Response) {
+  res.status(404);
+  res.send('Invalid Route.');
+});
 app.listen(3000, function () {
   console.log(`starting app on: ${address}`);
 });
