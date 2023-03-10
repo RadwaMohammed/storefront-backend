@@ -1,54 +1,134 @@
 # Storefront Backend Project
 
+A RESTful API for an online store. The application have tests, keep user information secure, and provide user authentication tokens that are ready to integrate with the frontend.
+
 ## Getting Started
 
-This repo contains a basic Node and Express app to get you started in constructing an API. To get started, clone this repo and run `yarn` in your terminal at the project root.
+Download or Clone the repository to your computer.
 
-## Required Technologies
-Your application must make use of the following libraries:
-- Postgres for the database
-- Node/Express for the application logic
-- dotenv from npm for managing environment variables
-- db-migrate from npm for migrations
-- jsonwebtoken from npm for working with JWTs
-- jasmine from npm for testing
+## Prerequisites and Local Development
 
-## Steps to Completion
+> You should already have node, npm and postgreSQL installed.
 
-### 1. Plan to Meet Requirements
+### Dependencies
 
-In this repo there is a `REQUIREMENTS.md` document which outlines what this API needs to supply for the frontend, as well as the agreed upon data shapes to be passed between front and backend. This is much like a document you might come across in real life when building or extending an API. 
+- [Node.js](https://nodejs.org/)
+- [Express](https://expressjs.com/)
+- [body-parser](https://github.com/expressjs/body-parser)
+- [node.bcrypt.js](https://github.com/kelektiv/node.bcrypt.js)
+- [node-postgres](https://node-postgres.com/)
+- [db-migrate](https://db-migrate.readthedocs.io/en/latest/)
+- [db-migrate-pg](https://github.com/db-migrate/pg)
+- [dotenv](https://github.com/motdotla/dotenv)
+- [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
 
-Your first task is to read the requirements and update the document with the following:
-- Determine the RESTful route for each endpoint listed. Add the RESTful route and HTTP verb to the document so that the frontend developer can begin to build their fetch requests.    
-**Example**: A SHOW route: 'blogs/:id' [GET] 
+### Dev dependencies
 
-- Design the Postgres database tables based off the data shape requirements. Add to the requirements document the database tables and columns being sure to mark foreign keys.   
-**Example**: You can format this however you like but these types of information should be provided
-Table: Books (id:varchar, title:varchar, author:varchar, published_year:varchar, publisher_id:string[foreign key to publishers table], pages:number)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Prettier](https://prettier.io/)
+- [ESLint](https://eslint.org/)
+- [Jasmine](https://jasmine.github.io/)
+- [SuperTest](https://www.npmjs.com/package/supertest)
+- [tsc-watch](https://github.com/gilamran/tsc-watch)
 
-**NOTE** It is important to remember that there might not be a one to one ratio between data shapes and database tables. Data shapes only outline the structure of objects being passed between frontend and API, the database may need multiple tables to store a single shape. 
 
-### 2.  DB Creation and Migrations
+### Install Dependencies
 
-Now that you have the structure of the databse outlined, it is time to create the database and migrations. Add the npm packages dotenv and db-migrate that we used in the course and setup your Postgres database. If you get stuck, you can always revisit the database lesson for a reminder. 
+Navigate to the project directory **/storefront-backend-project** , open your terminal and run: 
 
-You must also ensure that any sensitive information is hashed with bcrypt. If any passwords are found in plain text in your application it will not pass.
+`npm install`
 
-### 3. Models
+### Database Setup
 
-Create the models for each database table. The methods in each model should map to the endpoints in `REQUIREMENTS.md`. Remember that these models should all have test suites and mocks.
+Open psql
 
-### 4. Express Handlers
+`psql -U postgres`
 
-Set up the Express handlers to route incoming requests to the correct model method. Make sure that the endpoints you create match up with the enpoints listed in `REQUIREMENTS.md`. Endpoints must have tests and be CORS enabled. 
+Create the necessary databases for the project **<mystore_db, mystore_db_test>** and create a user **<mystore_db_user>** with all privileges in the databases.
+```
+CREATE USER mystore_db_user WITH PASSWORD 'password123';
+ALTER USER mystore_db_user WITH SUPERUSER;
+CREATE DATABASE mystore_db;
+GRANT ALL PRIVILEGES ON DATABASE mystore_db TO mystore_db_user;
+ALTER DATABASE mystore_db OWNER TO mystore_db_user;
+CREATE DATABASE mystore_db_test;
+GRANT ALL PRIVILEGES ON DATABASE mystore_db_test TO mystore_db_user;
+ALTER DATABASE mystore_db_test OWNER TO mystore_db_user;
+```
+### Environment Setup
 
-### 5. JWTs
+Create **.env** file in the main project directory  **/storefront-backend-project**  to hold the environment variables.
 
-Add JWT functionality as shown in the course. Make sure that JWTs are required for the routes listed in `REQUIUREMENTS.md`.
+    POSTGRES_HOST=127.0.0.1
+    POSTGRES_DB=mystore_db
+    POSTGRES_TEST_DB=mystore_db_test
+    POSTGRES_USER=mystore_db_user
+    POSTGRES_PASSWORD=password123
+    ENV=dev
+    BCRYPT_PASSWORD=welcome-user-and-login
+    SALT_ROUNDS=10
+    TOKEN_SECRET=quintessential321
 
-### 6. QA and `README.md`
+### Ports
 
-Before submitting, make sure that your project is complete with a `README.md`. Your `README.md` must include instructions for setting up and running your project including how you setup, run, and connect to your database. 
+- Express server runs on port:  `3000`
 
-Before submitting your project, spin it up and test each endpoint. If each one responds with data that matches the data shapes from the `REQUIREMENTS.md`, it is ready for submission!
+- Postgres database on port:  `5432`
+
+### Run Migrations
+
+To create tables for the database:
+
+`npm run migrate-up`
+
+### Start the server
+
+Run: `npm run watch`
+
+Server running at URL: http://127.0.0.1:3000/
+
+## Testing
+
+To test the app run :
+
+`npm run test`
+
+## Endpoints
+
+### Products
+
+- **GET** `/products` : get all products.
+- **GET** `/products/categories/:category`: get products by category.
+- **POST** `/products`: create a product [token required].
+- **GET** `/products/:id`: get a product by id.
+- **PUT** `'/products/:id`: update a product by id [token required].
+- **DELETE** `/products/:id`: delete a product by id [token required].
+
+### Users
+
+- **GET** `/users` : get all users [token required].
+- **POST** `/users`: create a user.
+- **GET** `/users/:id`: get a user by id [token required].
+- **PUT** `'/users/:id`: update a user by id [token required].
+- **DELETE** `/users/:id`: delete a user by id [token required].
+
+### Orders
+
+- **GET** `/orders` : get all orders [token required].
+- **GET** `/orders/order-details`: get orders with its products [token required].
+- **POST** `/orders`: create an order [token required].
+- **GET** `/orders/:id`: get an order by id [token required].
+- **PUT** `'/orders/:id`: update status of an order by id [token required].
+- **DELETE** `/orders/:id`: delete an order by id[token required].
+- **GET** `/orders/:id/order-details`: get an order with its products by id [token required].
+- **GET** `/orders/:id/products`: get products of an order by id [token required].
+- **POST** `/orders/:id/products`: add a product to an order by id [token required].
+- **DELETE** `/orders/:id/products`: remove a product from an order [token required].
+- **DELETE** `/orders/:id/products`: remove all products in an order [token required].
+- **PUT** `/orders/:id/products/:product`: update the quantity a product in an order  [token required].
+- **GET** `/users/:user/orders` : get all orders of a user [token required].
+- **GET** `/users/:user/orders/active` : get all active orders of a user [token required].
+- **GET** `/users/:user/orders/complete` : get all complete orders of a user [token required].
+- **DELETE** `/users/:user/orders` : delete all orders of a user [token required].
+- **DELETE** `/users/:user/orders/active` : delete all active orders of a user [token required].
+- **DELETE** `/users/:user/orders/complete` : delete all complete orders of a user [token required].
