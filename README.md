@@ -111,6 +111,7 @@ To test the app run :
 - **GET** `/users/:id`: get a user by id [token required].
 - **PUT** `'/users/:id`: update a user by id [token required].
 - **DELETE** `/users/:id`: delete a user by id [token required].
+- **Authenticate** `/users/authenticate`: authenticate a user.
 
 ### Orders
 
@@ -123,9 +124,9 @@ To test the app run :
 - **GET** `/orders/:id/order-details`: get an order with its products by id [token required].
 - **GET** `/orders/:id/products`: get products of an order by id [token required].
 - **POST** `/orders/:id/products`: add a product to an order by id [token required].
-- **DELETE** `/orders/:id/products`: remove a product from an order [token required].
+- **DELETE** `/orders/:id/products/:product`: remove a product from an order [token required].
 - **DELETE** `/orders/:id/products`: remove all products in an order [token required].
-- **PUT** `/orders/:id/products/:product`: update the quantity a product in an order  [token required].
+- **PUT** `/orders/:id/products/:product`: update the quantity a product in an order [token required].
 - **GET** `/users/:user/orders` : get all orders of a user [token required].
 - **GET** `/users/:user/orders/active` : get all active orders of a user [token required].
 - **GET** `/users/:user/orders/complete` : get all complete orders of a user [token required].
